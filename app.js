@@ -127,7 +127,7 @@ const RESULT_MAP = {
   "KBNK_20191009_000000000000105": {
     promptPay: true,
     responseCode: "1000",
-    responseDescription: ""
+    responseDescription: "Other Merchant Error"
   }
 };
 
