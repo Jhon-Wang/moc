@@ -202,7 +202,9 @@ app.post("/test/inquiry", (req, res) => {
     // PromptPay 专属：付款流水回显请求，收款方类型固定 "C"
     ...(promptPay
       ? {
-          promptPayTransactionId: body.promptPayTransactionId,
+          // 请求字段名为 promptPayReferenceNumber，响应字段名为 promptPayTransactionId
+          promptPayTransactionId:
+            body.promptPayReferenceNumber ?? body.promptPayTransactionId,
           typeofReceiver: "C"
         }
       : {}),
@@ -212,7 +214,7 @@ app.post("/test/inquiry", (req, res) => {
     ...(freeForm
       ? {
           promptPayTransactionId:
-            body.promptPayTransactionId ?? body.promptPayReferenceNumber,
+            body.promptPayReferenceNumber ?? body.promptPayTransactionId,
           typeofReceiver: "C",
           tranAmount: body.tranAmount
         }
