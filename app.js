@@ -52,7 +52,7 @@ const RESULT_MAP = {
     responseDescription: "Invalid payment amount"
   },
   // Inquiry Other Merchant Error（规范表：1000 / 空描述）
-  "98099310720200530183382105": { responseCode: "1000", responseDescription: "" },
+  "98099310720200530183382105": { responseCode: "1000", responseDescription: "Other Merchant Error" },
 
   // Inquiry Info EN Language（规范表：0000 / Success，info 仅英文）
   // info1 = Customer Name，info2 = Product Information，info3 = Other Information
