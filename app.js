@@ -85,7 +85,7 @@ const RESULT_MAP = {
   // 且同时带 promptPayTransactionId / typeOfReceiver / tranAmount
   "97999311020200530183382100": {
     freeForm: true,
-    functionName: "BILLookupResponse",
+    functionName: "BillLookup",
     responseCode: "0000",
     responseDescription: "Success"
   },
