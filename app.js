@@ -15,7 +15,7 @@ app.post("/test/inquiry", (req, res) => {
     transactionId,
     billType,
     billId,
-    terminalId,
+    terminalNo,
     reference1,
     reference2
   } = body;
@@ -29,7 +29,7 @@ app.post("/test/inquiry", (req, res) => {
     responseDescription: "Success",
     billerType: "",
     billerId: "98499",
-    terminalNo: terminalId,
+    terminalNo: "xxxxxxx8888",
     reference1,
     reference2
   });
