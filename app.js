@@ -208,11 +208,12 @@ app.post("/test/inquiry", (req, res) => {
       : {}),
     // Free Form 结构：同样有 promptPayTransactionId / typeOfReceiver，
     // 并回显 tranAmount；请求侧字段名为 promptPayReferenceNumber
+    // 注意：Free Form 的 typeOfReceiver 为空串（PromptPay 那套才是 "C"）
     ...(freeForm
       ? {
           promptPayTransactionId:
             body.promptPayTransactionId ?? body.promptPayReferenceNumber,
-          typeOfReceiver: "C",
+          typeOfReceiver: "",
           tranAmount: body.tranAmount
         }
       : {}),
