@@ -85,7 +85,7 @@ const RESULT_MAP = {
   // 且同时带 promptPayTransactionId / typeOfReceiver / tranAmount
   "97999311020200530183382100": {
     freeForm: true,
-    functionName: "BillLookup",
+    functionName: "BillLookupResponse",
     responseCode: "0000",
     responseDescription: "Success"
   },
@@ -203,7 +203,7 @@ app.post("/test/inquiry", (req, res) => {
     ...(promptPay
       ? {
           promptPayTransactionId: body.promptPayTransactionId,
-          typeOfReceiver: "C"
+          typeOfReceiver: ""
         }
       : {}),
     // Free Form 结构：同样有 promptPayTransactionId / typeOfReceiver，
@@ -212,7 +212,7 @@ app.post("/test/inquiry", (req, res) => {
       ? {
           promptPayTransactionId:
             body.promptPayTransactionId ?? body.promptPayReferenceNumber,
-          typeOfReceiver: "C",
+          typeOfReceiver: "",
           tranAmount: body.tranAmount
         }
       : {}),
