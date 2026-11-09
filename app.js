@@ -27,8 +27,8 @@ app.post("/test/inquiry", (req, res) => {
     billerTransactionId: transactionId,
     responseCode: "0000",
     responseDescription: "Success",
-    billerType: billType,
-    billerId: billId,
+    billerType: "",
+    billerId: "",
     terminalNo: terminalNo,
     reference1,
     reference2
