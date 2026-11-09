@@ -13,8 +13,8 @@ app.post("/test/inquiry", (req, res) => {
   const body = req.body;
   const {
     transactionId,
-    billType,
-    billId,
+    billerType,
+    billerId,
     terminalNo,
     reference1,
     reference2
@@ -27,9 +27,9 @@ app.post("/test/inquiry", (req, res) => {
     billerTransactionId: transactionId,
     responseCode: "0000",
     responseDescription: "Success",
-    billerType: "",
-    billerId: billId,
-    terminalNo: terminalNo,
+    billerType,
+    billerId,
+    terminalNo,
     reference1,
     reference2
   });
