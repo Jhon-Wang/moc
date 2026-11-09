@@ -21,7 +21,7 @@ app.post("/test/inquiry", (req, res) => {
   } = body;
 
   res.json({
-    functionName: "BillLookUpResponse",
+    functionName: "BillLookupResponse",
     transactionId,
     transactionDateTime: getBangkokDateTime(),
     billerTransactionId: transactionId,
