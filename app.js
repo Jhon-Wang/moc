@@ -82,7 +82,7 @@ const RESULT_MAP = {
   },
   // Free Form Success
   // 采用 Free Form 结构：functionName 为 "BILLookupResponse"，
-  // 且同时带 promptPayTransactionId / typeOfReceiver / tranAmount
+  // 且同时带 promptPayTransactionId / typeofReceiver / tranAmount
   "97999311020200530183382100": {
     freeForm: true,
     functionName: "BillLookupResponse",
@@ -92,7 +92,7 @@ const RESULT_MAP = {
 
   // ── PromptPay Inquiry ─────────────────────────────────────
   // PromptPay 响应比普通 Inquiry 多两个字段，插在 terminalNo 与 reference1 之间：
-  //   promptPayTransactionId（回显请求）、typeOfReceiver（固定 "C"）
+  //   promptPayTransactionId（回显请求）、typeofReceiver（固定 "C"）
   // PromptPay Inquiry Success
   "KBNK_20191009_000000000000100": {
     promptPay: true,
@@ -133,7 +133,7 @@ const RESULT_MAP = {
 
 /* 响应字段顺序（严格按规范表）
  * - tranAmount 位于 reference2 与 info1 之间，仅在需要金额的场景出现
- * - promptPayTransactionId / typeOfReceiver 位于 terminalNo 与 reference1 之间，
+ * - promptPayTransactionId / typeofReceiver 位于 terminalNo 与 reference1 之间，
  *   仅 PromptPay 场景出现
  */
 const FIELD_ORDER = [
@@ -147,7 +147,7 @@ const FIELD_ORDER = [
   "billerId",
   "terminalNo",
   "promptPayTransactionId",
-  "typeOfReceiver",
+  "typeofReceiver",
   "reference1",
   "reference2",
   "tranAmount",
@@ -203,17 +203,17 @@ app.post("/test/inquiry", (req, res) => {
     ...(promptPay
       ? {
           promptPayTransactionId: body.promptPayTransactionId,
-          typeOfReceiver: "C"
+          typeofReceiver: "C"
         }
       : {}),
-    // Free Form 结构：同样有 promptPayTransactionId / typeOfReceiver，
+    // Free Form 结构：同样有 promptPayTransactionId / typeofReceiver，
     // 并回显 tranAmount；请求侧字段名为 promptPayReferenceNumber
-    // 注意：Free Form 的 typeOfReceiver 为空串（PromptPay 那套才是 "C"）
+    // 注意：Free Form 的 typeofReceiver 为空串（PromptPay 那套才是 "C"）
     ...(freeForm
       ? {
           promptPayTransactionId:
             body.promptPayTransactionId ?? body.promptPayReferenceNumber,
-          typeOfReceiver: "",
+          typeofReceiver: "C",
           tranAmount: body.tranAmount
         }
       : {}),
