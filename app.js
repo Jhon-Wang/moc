@@ -203,7 +203,7 @@ app.post("/test/inquiry", (req, res) => {
     ...(promptPay
       ? {
           promptPayTransactionId: body.promptPayTransactionId,
-          typeOfReceiver: ""
+          typeOfReceiver: "C"
         }
       : {}),
     // Free Form 结构：同样有 promptPayTransactionId / typeOfReceiver，
@@ -212,7 +212,7 @@ app.post("/test/inquiry", (req, res) => {
       ? {
           promptPayTransactionId:
             body.promptPayTransactionId ?? body.promptPayReferenceNumber,
-          typeOfReceiver: "",
+          typeOfReceiver: "C",
           tranAmount: body.tranAmount
         }
       : {}),
@@ -225,6 +225,13 @@ app.post("/test/inquiry", (req, res) => {
   };
 
   // 按规范顺序装配，跳过本场景不适用的字段（如 tranAmount）
+  // PromptPay 响应不返回 info1~3
+  if (promptPay) {
+    delete values.info1;
+    delete values.info2;
+    delete values.info3;
+  }
+
   const payload = {};
   for (const key of FIELD_ORDER) {
     if (values[key] !== undefined) payload[key] = values[key];
