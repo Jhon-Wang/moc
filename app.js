@@ -73,11 +73,11 @@ const RESULT_MAP = {
     info3: "กรุณาชำระก่อนวันครบกำหนด"
   },
   // Inquiry Reference 1 for return Reference 2 and amount Success
-  // 只传 reference1；响应里 reference2 为空串，tranAmount 为固定金额
+  // 只传 reference1；响应回填固定 reference2 与金额
   "97999311020200530183382108": {
     responseCode: "0000",
     responseDescription: "Success",
-    reference2: "",
+    reference2: "999990045751",
     tranAmount: "120.00"
   },
   // Free Form Success
