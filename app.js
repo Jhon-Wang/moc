@@ -27,6 +27,15 @@ function getBillerTransactionId(date = new Date()) {
   return `${ymd}T${hms}${String(billerTxnSeq).padStart(5, "0")}`;
 }
 
+/* 打印请求参数，便于在 Render 日志中排查
+ * apiKey 做脱敏，避免密钥落到日志里
+ */
+function logRequest(route, body) {
+  const masked = { ...body };
+  if (masked.apiKey) masked.apiKey = "***";
+  console.log(`[${getBangkokString()} +07:00] ${route} ${JSON.stringify(masked)}`);
+}
+
 /* ─────────────────────── 场景字典 ───────────────────────
  * transactionId -> 返回结果
  * 注意：transactionId 必须按字符串传入，26 位数字会超出 JS 安全整数范围而丢精度
@@ -314,6 +323,7 @@ function buildResponsePayload(body, result, fallbackFunctionName) {
 // 账单查询
 app.post("/test/inquiry", (req, res) => {
   const body = req.body || {};
+  logRequest("POST /test/inquiry", body);
   const result = RESULT_MAP[body.transactionId] || DEFAULT_RESULT;
   res.json(buildResponsePayload(body, result, "BillLookupResponse"));
 });
@@ -355,6 +365,7 @@ function buildPaymentPayload(body, result) {
 // 账单支付
 app.post("/test/payment", (req, res) => {
   const body = req.body || {};
+  logRequest("POST /test/payment", body);
   const result = PAYMENT_RESULT_MAP[body.transactionId] || PAYMENT_DEFAULT_RESULT;
   res.json(buildPaymentPayload(body, result));
 });
