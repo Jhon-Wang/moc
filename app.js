@@ -161,8 +161,82 @@ const DEFAULT_RESULT = {
   responseDescription: "Success"
 };
 
-app.post("/test/inquiry", (req, res) => {
-  const body = req.body || {};
+/* ─────────────────────── Payment ───────────────────────
+ * 依据「Exercise: BillPayment Response」规范：
+ * - HTTP 状态码必须 200
+ * - functionName 固定 "BillPaymentResponse"
+ * - 时间字段名为 responseDateTime（与 Inquiry 的 transactionDateTime 不同），须为当天
+ * - responseCode / responseDescription 按场景，默认 "0000" / "Success"
+ * - terminalNo 固定 "xxxxxxx8888"
+ * - Inquiry Additional: rsAppId 固定 ""
+ *
+ * 场景字典：暂沿用 Inquiry 的 transactionId 与码值，待 Payment 专属场景文档补充后覆盖。
+ */
+const PAYMENT_CORE_FIELDS = [
+  "functionName",
+  "transactionId",
+  "responseDateTime",
+  "billerTransactionId",
+  "responseCode",
+  "responseDescription",
+  "terminalNo"
+];
+
+// payment 的三种响应形态
+const PAYMENT_VARIANTS = {
+  // Exercise: BillPayment Response —— Additional 仅 rsAppId，terminalNo 固定
+  billPayment: {
+    fields: [...PAYMENT_CORE_FIELDS, "rsAppId"],
+    echoTerminalNo: false
+  },
+  // Exercise: Payment Response —— Additional 为 settlementDate + rsAppId
+  payment: {
+    fields: [...PAYMENT_CORE_FIELDS, "settlementDate", "rsAppId"],
+    echoTerminalNo: false
+  },
+  // PromptPay 版 BillPayment —— terminalNo 回显请求值，多 promptPayTransactionId
+  billPaymentPromptPay: {
+    fields: [
+      ...PAYMENT_CORE_FIELDS,
+      "promptPayTransactionId",
+      "settlementDate",
+      "rsAppId"
+    ],
+    echoTerminalNo: true
+  }
+};
+
+// 按 transactionId 指定响应形态，未列出的走默认（payment）
+const PAYMENT_VARIANT_MAP = {
+  // BillPayment Response（8 字段）
+  "98099310720200530183382100": "billPayment",
+  // Payment Response（9 字段）
+  "97999311020200530183382100": "payment",
+  "97999311020200530183382108": "payment",
+  // PromptPay 版 BillPayment（10 字段，terminalNo 回显）
+  "KBNK_20191009_000000000000100": "billPaymentPromptPay"
+};
+
+const PAYMENT_DEFAULT_RESULT = {
+  responseCode: "0000",
+  responseDescription: "Success"
+};
+
+const PAYMENT_RESULT_MAP = Object.fromEntries(
+  Object.entries(RESULT_MAP).map(([id, { functionName, ...rest }]) => [
+    id,
+    {
+      responseCode: rest.responseCode,
+      responseDescription: rest.responseDescription
+    }
+  ])
+);
+
+/* 统一构造响应报文
+ * - 字段顺序由 FIELD_ORDER 决定，值为 undefined 的字段跳过
+ * - promptPay / freeForm / payment 三种结构标记决定附加字段的取舍
+ */
+function buildResponsePayload(body, result, fallbackFunctionName) {
   const {
     transactionId,
     billerType,
@@ -171,9 +245,6 @@ app.post("/test/inquiry", (req, res) => {
     reference1,
     reference2
   } = body;
-
-  // 查表决定返回内容，未命中用默认成功
-  const result = RESULT_MAP[transactionId] || DEFAULT_RESULT;
 
   // 取出返回码与描述，其余字段作为附加字段覆盖基础值
   const {
@@ -185,12 +256,14 @@ app.post("/test/inquiry", (req, res) => {
     ...extra
   } = result;
 
+  // Free Form 使用完整字段结构
+  const fullForm = Boolean(freeForm);
+
   // 单次取时间，保证 transactionDateTime 与 billerTransactionId 秒级一致
   const now = new Date();
 
-  // 先汇总所有字段值：基础值 + 场景覆盖
   const values = {
-    functionName: respFunctionName || "BillLookupResponse",
+    functionName: respFunctionName || fallbackFunctionName,
     transactionId,
     transactionDateTime: getBangkokDateTime(now),
     billerTransactionId: getBillerTransactionId(now),
@@ -199,26 +272,17 @@ app.post("/test/inquiry", (req, res) => {
     billerType,
     billerId,
     terminalNo,
-    // PromptPay 专属：付款流水回显请求，收款方类型固定 "C"
-    ...(promptPay
+    // PromptPay / 完整结构：请求字段名为 promptPayReferenceNumber，
+    // 响应字段名为 promptPayTransactionId；收款方类型固定 "C"
+    ...(promptPay || fullForm
       ? {
-          // 请求字段名为 promptPayReferenceNumber，响应字段名为 promptPayTransactionId
           promptPayTransactionId:
             body.promptPayReferenceNumber ?? body.promptPayTransactionId,
           typeofReceiver: "C"
         }
       : {}),
-    // Free Form 结构：同样有 promptPayTransactionId / typeofReceiver，
-    // 并回显 tranAmount；请求侧字段名为 promptPayReferenceNumber
-    // 注意：Free Form 的 typeofReceiver 为空串（PromptPay 那套才是 "C"）
-    ...(freeForm
-      ? {
-          promptPayTransactionId:
-            body.promptPayReferenceNumber ?? body.promptPayTransactionId,
-          typeofReceiver: "C",
-          tranAmount: body.tranAmount
-        }
-      : {}),
+    // 完整结构额外回显 tranAmount
+    ...(fullForm ? { tranAmount: body.tranAmount } : {}),
     reference1,
     reference2,
     info1: "",
@@ -227,7 +291,6 @@ app.post("/test/inquiry", (req, res) => {
     ...extra
   };
 
-  // 按规范顺序装配，跳过本场景不适用的字段（如 tranAmount）
   // PromptPay 响应不返回 info1~3
   if (promptPay) {
     delete values.info1;
@@ -235,6 +298,7 @@ app.post("/test/inquiry", (req, res) => {
     delete values.info3;
   }
 
+  // 按规范顺序装配
   const payload = {};
   for (const key of FIELD_ORDER) {
     if (values[key] !== undefined) payload[key] = values[key];
@@ -244,7 +308,55 @@ app.post("/test/inquiry", (req, res) => {
     if (!(key in payload) && values[key] !== undefined) payload[key] = values[key];
   }
 
-  res.json(payload);
+  return payload;
+}
+
+// 账单查询
+app.post("/test/inquiry", (req, res) => {
+  const body = req.body || {};
+  const result = RESULT_MAP[body.transactionId] || DEFAULT_RESULT;
+  res.json(buildResponsePayload(body, result, "BillLookupResponse"));
+});
+
+/* 构造 BillPayment 响应报文
+ * 形态由 PAYMENT_VARIANT_MAP 决定，规范外的字段一律不返回
+ */
+function buildPaymentPayload(body, result) {
+  const now = new Date();
+
+  const variant =
+    PAYMENT_VARIANTS[PAYMENT_VARIANT_MAP[body.transactionId]] ||
+    PAYMENT_VARIANTS.payment;
+
+  const values = {
+    functionName: "BillPaymentResponse",
+    transactionId: body.transactionId,
+    responseDateTime: getBangkokDateTime(now),
+    billerTransactionId: getBillerTransactionId(now),
+    responseCode: result.responseCode,
+    responseDescription: result.responseDescription,
+    // 部分形态要求回显请求的 terminalNo，其余形态固定
+    terminalNo: variant.echoTerminalNo ? body.terminalNo : "xxxxxxx8888",
+    // 请求字段名为 promptPayReferenceNumber，响应字段名为 promptPayTransactionId
+    promptPayTransactionId:
+      body.promptPayReferenceNumber ?? body.promptPayTransactionId,
+    // Additional：均固定空串
+    settlementDate: "",
+    rsAppId: ""
+  };
+
+  const payload = {};
+  for (const key of variant.fields) {
+    if (values[key] !== undefined) payload[key] = values[key];
+  }
+  return payload;
+}
+
+// 账单支付
+app.post("/test/payment", (req, res) => {
+  const body = req.body || {};
+  const result = PAYMENT_RESULT_MAP[body.transactionId] || PAYMENT_DEFAULT_RESULT;
+  res.json(buildPaymentPayload(body, result));
 });
 
 // ✅ Render 关键：绑定 0.0.0.0，读取 $PORT
